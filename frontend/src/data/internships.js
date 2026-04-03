@@ -1,6 +1,6 @@
 export const INTERNSHIPS = [
   {
-    id: "1",
+    id: "1",// This ID is just for frontend use; the backend will generate its own IDs
     companyName: "Safaricom Ethiopia",
     location: "Addis Ababa",
     field: "IT",
