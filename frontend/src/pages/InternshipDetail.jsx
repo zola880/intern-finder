@@ -1,17 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { motion } from "motion/react";
-import { 
-  ArrowLeft, 
-  MapPin, 
-  Calendar, 
-  Clock, 
-  ExternalLink, 
-  CheckCircle2, 
+import {
+  ArrowLeft,
+  MapPin,
+  Calendar,
+  Clock,
+  CheckCircle2,
   Briefcase,
   Share2,
   Bookmark,
-  Loader2
+  Loader2,
+  Send,
 } from "lucide-react";
 import api from "../services/api";
 import { useProfile } from "../hooks/useProfile";
@@ -30,11 +29,11 @@ const InternshipDetail = () => {
       try {
         const [internshipRes, savedRes] = await Promise.all([
           api.get(`/internships/${id}`),
-          user ? api.get("/saved") : Promise.resolve({ data: [] })
+          user ? api.get("/saved") : Promise.resolve({ data: [] }),
         ]);
         setInternship(internshipRes.data);
         if (user) {
-          const savedIds = savedRes.data.map(i => i._id);
+          const savedIds = savedRes.data.map((item) => item._id);
           setIsSaved(savedIds.includes(id));
         }
       } catch (err) {
@@ -43,6 +42,7 @@ const InternshipDetail = () => {
         setLoading(false);
       }
     };
+
     fetchData();
   }, [id, user]);
 
@@ -51,6 +51,7 @@ const InternshipDetail = () => {
       navigate("/login");
       return;
     }
+
     setSaving(true);
     try {
       if (isSaved) {
@@ -64,6 +65,15 @@ const InternshipDetail = () => {
       console.error(err);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      alert("Internship URL copied to clipboard.");
+    } catch (error) {
+      alert("Unable to copy URL. Please copy from the address bar.");
     }
   };
 
@@ -86,7 +96,7 @@ const InternshipDetail = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <button 
+      <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-zinc-500 hover:text-indigo-600 font-medium mb-8 transition-colors group"
       >
@@ -95,7 +105,6 @@ const InternshipDetail = () => {
       </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        {/* Main Content */}
         <div className="lg:col-span-2 space-y-12">
           <section>
             <div className="flex items-center gap-4 mb-6">
@@ -127,8 +136,11 @@ const InternshipDetail = () => {
 
               <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-4">Required Skills</h3>
               <div className="flex flex-wrap gap-3 mb-8">
-                {internship.requiredSkills.map((skill, i) => (
-                  <div key={i} className="flex items-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-xl text-sm font-medium border border-zinc-200 dark:border-zinc-700">
+                {internship.requiredSkills.map((skill, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-xl text-sm font-medium border border-zinc-200 dark:border-zinc-700"
+                  >
                     <CheckCircle2 className="w-4 h-4 text-indigo-600" />
                     {skill}
                   </div>
@@ -162,20 +174,17 @@ const InternshipDetail = () => {
           </section>
         </div>
 
-        {/* Sidebar Actions */}
         <div className="space-y-6">
           <div className="p-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-sm sticky top-24">
             <h4 className="font-bold text-zinc-900 dark:text-white mb-6">Ready to apply?</h4>
             <div className="space-y-4">
-              <a
-                href={internship.website}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                to={`/apply/${internship._id}`}
                 className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
               >
                 Apply Now
-                <ExternalLink className="w-4 h-4" />
-              </a>
+                <Send className="w-4 h-4" />
+              </Link>
               <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
                 <p className="text-xs text-zinc-500 mb-3">Already secured this internship?</p>
                 <Link
@@ -188,19 +197,22 @@ const InternshipDetail = () => {
             </div>
 
             <div className="flex gap-4 mt-8 pt-8 border-t border-zinc-100 dark:border-zinc-800">
-              <button 
+              <button
                 onClick={toggleSave}
                 disabled={saving}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
-                  isSaved 
-                    ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600" 
+                  isSaved
+                    ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600"
                     : "bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100"
                 }`}
               >
                 <Bookmark className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
                 {isSaved ? "Saved" : "Save"}
               </button>
-              <button className="flex-1 flex items-center justify-center gap-2 py-3 bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-xl text-sm font-bold hover:bg-zinc-100 transition-all">
+              <button
+                onClick={handleShare}
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-xl text-sm font-bold hover:bg-zinc-100 transition-all"
+              >
                 <Share2 className="w-4 h-4" />
                 Share
               </button>

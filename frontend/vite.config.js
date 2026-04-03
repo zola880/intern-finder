@@ -17,6 +17,16 @@ export default defineConfig(({mode}) => {
     },
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
+      proxy: {
+        '/health': {
+          target: 'http://localhost:5000',
+          changeOrigin: true,
+        },
+        '/api': {
+          target: 'http://localhost:5000',
+          changeOrigin: true,
+        },
+      },
     },
   };
 });

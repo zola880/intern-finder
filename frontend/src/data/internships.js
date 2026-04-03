@@ -10,7 +10,8 @@ export const INTERNSHIPS = [
     requiredSkills: ["Networking Basics", "Python", "Problem Solving"],
     duration: "3 Months",
     deadline: "2026-05-15",
-    website: "https://www.safaricom.et"
+    website: "https://www.safaricom.et",
+    applicationUrl: "https://careers.safaricom.et/internships/network-engineering-2026"
   },
   {
     id: "2",
@@ -23,7 +24,8 @@ export const INTERNSHIPS = [
     requiredSkills: ["Financial Analysis", "Customer Service", "Excel"],
     duration: "2 Months",
     deadline: "2026-06-01",
-    website: "https://www.combanketh.et"
+    website: "https://www.combanketh.et",
+    applicationUrl: "https://careers.combanketh.et/digital-banking-internship-2026"
   },
   {
     id: "3",
@@ -36,7 +38,8 @@ export const INTERNSHIPS = [
     requiredSkills: ["Mechanical Engineering", "Physics", "Attention to Detail"],
     duration: "6 Months",
     deadline: "2026-04-30",
-    website: "https://www.ethiopianairlines.com"
+    website: "https://www.ethiopianairlines.com",
+    applicationUrl: "https://careers.ethiopianairlines.com/avionics-internship-2026"
   },
   {
     id: "4",
@@ -49,7 +52,8 @@ export const INTERNSHIPS = [
     requiredSkills: ["JavaScript", "React", "Git"],
     duration: "4 Months",
     deadline: "2026-05-20",
-    website: "https://gebeya.com"
+    website: "https://gebeya.com",
+    applicationUrl: "https://careers.gebeya.com/fullstack-internship-2026"
   },
   {
     id: "5",
@@ -62,6 +66,7 @@ export const INTERNSHIPS = [
     requiredSkills: ["Data Management", "Technical Writing", "Basic Programming"],
     duration: "3 Months",
     deadline: "2026-03-01",
-    website: "https://www.mint.gov.et"
+    website: "https://www.mint.gov.et",
+    applicationUrl: "https://careers.mint.gov.et/digital-transformation-internship-2026"
   }
 ];
