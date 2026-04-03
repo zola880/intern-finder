@@ -7,7 +7,6 @@ import Home from "./pages/Home";
 import InternshipList from "./pages/InternshipList";
 import InternshipDetail from "./pages/InternshipDetail";
 import AnnouncementForm from "./pages/AnnouncementForm";
-import CompanyApplicationForm from "./pages/CompanyApplicationForm";
 import AIAssistant from "./pages/AIAssistant";
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
@@ -29,29 +28,25 @@ export default function App() {
               <Route path="/internships/:id" element={<InternshipDetail />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route
-                path="/apply/:id"
-                element={<ProtectedRoute><CompanyApplicationForm /></ProtectedRoute>}
+              <Route 
+                path="/announce/:id" 
+                element={<ProtectedRoute><AnnouncementForm /></ProtectedRoute>} 
               />
-              <Route
-                path="/announce/:id"
-                element={<ProtectedRoute><AnnouncementForm /></ProtectedRoute>}
+              <Route 
+                path="/ai-assistant" 
+                element={<ProtectedRoute><AIAssistant /></ProtectedRoute>} 
               />
-              <Route
-                path="/ai-assistant"
-                element={<ProtectedRoute><AIAssistant /></ProtectedRoute>}
+              <Route 
+                path="/profile" 
+                element={<ProtectedRoute><Profile /></ProtectedRoute>} 
               />
-              <Route
-                path="/profile"
-                element={<ProtectedRoute><Profile /></ProtectedRoute>}
+              <Route 
+                path="/post-internship" 
+                element={<ProtectedRoute><PostInternship /></ProtectedRoute>} 
               />
-              <Route
-                path="/post-internship"
-                element={<ProtectedRoute><PostInternship /></ProtectedRoute>}
-              />
-              <Route
-                path="/admin"
-                element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>}
+              <Route 
+                path="/admin" 
+                element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} 
               />
             </Routes>
           </main>

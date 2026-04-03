@@ -8,10 +8,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-exports.uploadToCloudinary = (buffer, originalName, folder = 'announcements') => {
+exports.uploadToCloudinary = (buffer, originalName) => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
-      { folder, public_id: `file_${Date.now()}` },
+      { folder: 'announcements', public_id: `file_${Date.now()}` },
       (error, result) => {
         if (error) reject(error);
         else resolve(result.secure_url);
