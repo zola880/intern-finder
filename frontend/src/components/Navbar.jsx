@@ -1,4 +1,4 @@
-import React from "react";
+import React from "react";// Main navigation bar component with responsive design and role-based links
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { Briefcase, Sparkles, User, Sun, Moon, Menu, X, LogOut, PlusCircle, Shield } from "lucide-react";

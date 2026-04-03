@@ -7,7 +7,7 @@ import {
   CheckCircle2, 
   AlertCircle, 
   Send, 
-  FileText, 
+  FileText, // File Icon
   Building2,
   CreditCard
 } from "lucide-react";

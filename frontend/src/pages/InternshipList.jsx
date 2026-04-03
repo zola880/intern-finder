@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "motion/react";
 import { Search, Loader2, AlertCircle } from "lucide-react";
-import InternshipCard from "../components/InternshipCard";
+import InternshipCard from "../components/InternshipCard";// Reuse the same card component for consistency
 import api from "../services/api";
 import { useProfile } from "../hooks/useProfile";
 

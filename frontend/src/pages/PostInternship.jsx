@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react';// New page for companies to post internships
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Briefcase, MapPin, Calendar, Clock, ExternalLink, CheckCircle2, Building2, Users, Sparkles, Loader2 } from 'lucide-react';

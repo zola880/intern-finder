@@ -4,7 +4,7 @@ import { ProfileProvider } from "./hooks/useProfile";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
-import InternshipList from "./pages/InternshipList";
+import InternshipList from "./pages/InternshipList";// List of internships with search and filters  
 import InternshipDetail from "./pages/InternshipDetail";
 import AnnouncementForm from "./pages/AnnouncementForm";
 import AIAssistant from "./pages/AIAssistant";
