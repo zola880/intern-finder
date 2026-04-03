@@ -23,3 +23,4 @@ const internshipSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 module.exports = mongoose.model('Internship', internshipSchema);
+// new

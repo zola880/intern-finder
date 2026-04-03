@@ -16,3 +16,4 @@ router.put('/:id/approve', roleCheck('ADMIN'), internshipController.approveInter
 router.put('/:id/reject', roleCheck('ADMIN'), internshipController.rejectInternship);
 
 module.exports = router;
+// new
