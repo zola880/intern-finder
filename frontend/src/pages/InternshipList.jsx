@@ -1,22 +1,49 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { Search, Filter, SlidersHorizontal, X } from "lucide-react";
-import { INTERNSHIPS } from "../data/internships";
+import { Search, Loader2 } from "lucide-react";
 import InternshipCard from "../components/InternshipCard";
+import api from "../services/api";
+import { useProfile } from "../hooks/useProfile";
 
 const InternshipList = () => {
+  const { user } = useProfile();
+  const [internships, setInternships] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedField, setSelectedField] = useState("All");
-  const [showFilters, setShowFilters] = useState(false);
+  const [pagination, setPagination] = useState({ page: 1, limit: 9, total: 0 });
 
   const fields = ["All", "IT", "Business", "Engineering", "Health", "Other"];
 
-  const filteredInternships = INTERNSHIPS.filter((i) => {
-    const matchesSearch = i.companyName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          i.shortDescription.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesField = selectedField === "All" || i.field === selectedField;
-    return matchesSearch && matchesField;
-  });
+  useEffect(() => {
+    const fetchInternships = async () => {
+      setLoading(true);
+      try {
+        const params = {
+          search: searchTerm || undefined,
+          field: selectedField === "All" ? undefined : selectedField,
+          page: pagination.page,
+          limit: pagination.limit,
+        };
+        const { data } = await api.get("/internships", { params });
+        setInternships(data.data);
+        setPagination((prev) => ({ ...prev, total: data.pagination.total }));
+      } catch (err) {
+        console.error("Failed to fetch internships:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Debounce search to avoid too many requests
+    const timer = setTimeout(fetchInternships, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm, selectedField, pagination.page, pagination.limit, user]);
+
+  const handlePageChange = (newPage) => {
+    setPagination((prev) => ({ ...prev, page: newPage }));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 min-h-screen">
@@ -29,10 +56,10 @@ const InternshipList = () => {
             Discover your next professional milestone. Filter through verified opportunities across Ethiopia's leading industries.
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2 text-sm font-medium text-zinc-500">
           <span className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-full">
-            {filteredInternships.length} Results Found
+            {pagination.total} Results Found
           </span>
         </div>
       </div>
@@ -49,12 +76,15 @@ const InternshipList = () => {
             className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-zinc-900 dark:text-white shadow-sm"
           />
         </div>
-        
+
         <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
           {fields.map((field) => (
             <button
               key={field}
-              onClick={() => setSelectedField(field)}
+              onClick={() => {
+                setSelectedField(field);
+                setPagination((prev) => ({ ...prev, page: 1 })); // reset page on filter change
+              }}
               className={`px-6 py-4 rounded-2xl font-bold text-sm whitespace-nowrap transition-all border ${
                 selectedField === field
                   ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-600/20"
@@ -68,12 +98,40 @@ const InternshipList = () => {
       </div>
 
       {/* Grid */}
-      {filteredInternships.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredInternships.map((internship) => (
-            <InternshipCard key={internship.id} internship={internship} />
-          ))}
+      {loading ? (
+        <div className="flex justify-center py-24">
+          <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
         </div>
+      ) : internships.length > 0 ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {internships.map((internship) => (
+              <InternshipCard key={internship._id} internship={internship} />
+            ))}
+          </div>
+          {/* Pagination */}
+          {pagination.total > pagination.limit && (
+            <div className="flex justify-center gap-2 mt-12">
+              <button
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
+                className="px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span className="px-4 py-2 text-zinc-600 dark:text-zinc-400">
+                Page {pagination.page} of {Math.ceil(pagination.total / pagination.limit)}
+              </span>
+              <button
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.page * pagination.limit >= pagination.total}
+                className="px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <div className="py-24 text-center">
           <div className="w-20 h-20 bg-zinc-100 dark:bg-zinc-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
@@ -81,8 +139,12 @@ const InternshipList = () => {
           </div>
           <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-2">No internships found</h3>
           <p className="text-zinc-500 dark:text-zinc-400">Try adjusting your search or filters to find more opportunities.</p>
-          <button 
-            onClick={() => { setSearchTerm(""); setSelectedField("All"); }}
+          <button
+            onClick={() => {
+              setSearchTerm("");
+              setSelectedField("All");
+              setPagination((prev) => ({ ...prev, page: 1 }));
+            }}
             className="mt-6 text-indigo-600 font-bold hover:underline"
           >
             Clear all filters

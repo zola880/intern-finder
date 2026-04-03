@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { 
   User, 
@@ -9,24 +9,80 @@ import {
   Bookmark, 
   Settings,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useProfile } from "../hooks/useProfile";
-import { INTERNSHIPS } from "../data/internships";
+import api from "../services/api";
 import InternshipCard from "../components/InternshipCard";
 
 const Profile = () => {
-  const { profile, updateProfile } = useProfile();
+  const { user, updateProfile, logout, loading: authLoading } = useProfile();
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState(profile);
+  const [formData, setFormData] = useState({
+    fullName: user?.fullName || "",
+    department: user?.department || "",
+    university: user?.university || "",
+    year: user?.year || "1",
+    experienceLevel: user?.experienceLevel || "Beginner",
+    goal: user?.goal || "",
+    location: user?.location || "Addis Ababa",
+    interests: user?.interests || [],
+  });
+  const [savedInternships, setSavedInternships] = useState([]);
+  const [loadingSaved, setLoadingSaved] = useState(true);
 
-  const savedList = INTERNSHIPS.filter(i => profile.savedInternships.includes(i.id));
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        fullName: user.fullName || "",
+        department: user.department || "",
+        university: user.university || "",
+        year: user.year || "1",
+        experienceLevel: user.experienceLevel || "Beginner",
+        goal: user.goal || "",
+        location: user.location || "Addis Ababa",
+        interests: user.interests || [],
+      });
+      // Fetch saved internships from API
+      const fetchSaved = async () => {
+        try {
+          const { data } = await api.get("/saved");
+          setSavedInternships(data);
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setLoadingSaved(false);
+        }
+      };
+      fetchSaved();
+    }
+  }, [user]);
 
-  const handleSave = () => {
-    updateProfile(formData);
+  const handleSave = async () => {
+    await updateProfile(formData);
     setIsEditing(false);
   };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
+  if (authLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-24 text-center">
+        <Loader2 className="w-10 h-10 animate-spin text-indigo-600 mx-auto" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    navigate("/login");
+    return null;
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -37,8 +93,8 @@ const Profile = () => {
             <div className="w-24 h-24 bg-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-indigo-600/20">
               <User className="w-12 h-12 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-zinc-900 dark:text-white mb-1">{profile.fullName || "Student Name"}</h2>
-            <p className="text-sm text-zinc-500 mb-6">{profile.department || "Field of Study"}</p>
+            <h2 className="text-xl font-bold text-zinc-900 dark:text-white mb-1">{user.fullName || "Student Name"}</h2>
+            <p className="text-sm text-zinc-500 mb-6">{user.department || "Field of Study"}</p>
             
             <button 
               onClick={() => setIsEditing(!isEditing)}
@@ -50,17 +106,27 @@ const Profile = () => {
           </div>
 
           <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-2xl space-y-1">
-            {[
-              { label: "My Applications", icon: ChevronRight },
-              { label: "Saved Internships", icon: Bookmark },
-              { label: "Account Settings", icon: Settings },
-              { label: "Sign Out", icon: LogOut, color: "text-red-500" }
-            ].map((item, i) => (
-              <button key={i} className={`w-full flex items-center justify-between p-3 rounded-xl text-sm font-medium hover:bg-white dark:hover:bg-zinc-800 transition-all ${item.color || "text-zinc-600 dark:text-zinc-400"}`}>
-                {item.label}
-                <item.icon className="w-4 h-4" />
-              </button>
-            ))}
+            <button 
+              onClick={() => navigate("/profile")}
+              className="w-full flex items-center justify-between p-3 rounded-xl text-sm font-medium hover:bg-white dark:hover:bg-zinc-800 transition-all text-zinc-600 dark:text-zinc-400"
+            >
+              My Applications
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => navigate("/profile")}
+              className="w-full flex items-center justify-between p-3 rounded-xl text-sm font-medium hover:bg-white dark:hover:bg-zinc-800 transition-all text-zinc-600 dark:text-zinc-400"
+            >
+              Saved Internships
+              <Bookmark className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={handleLogout}
+              className="w-full flex items-center justify-between p-3 rounded-xl text-sm font-medium hover:bg-white dark:hover:bg-zinc-800 transition-all text-red-500"
+            >
+              Sign Out
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
@@ -106,6 +172,20 @@ const Profile = () => {
                   />
                 </div>
                 <div className="space-y-2">
+                  <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Year of Study</label>
+                  <select
+                    value={formData.year}
+                    onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                    className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl py-3 px-4 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-zinc-900 dark:text-white"
+                  >
+                    <option value="1">Year 1</option>
+                    <option value="2">Year 2</option>
+                    <option value="3">Year 3</option>
+                    <option value="4">Year 4</option>
+                    <option value="5">Year 5</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
                   <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Experience Level</label>
                   <select
                     value={formData.experienceLevel}
@@ -116,6 +196,25 @@ const Profile = () => {
                     <option value="Intermediate">Intermediate</option>
                     <option value="Advanced">Advanced</option>
                   </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Career Goal</label>
+                  <input
+                    type="text"
+                    value={formData.goal}
+                    onChange={(e) => setFormData({ ...formData, goal: e.target.value })}
+                    className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl py-3 px-4 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-zinc-900 dark:text-white"
+                    placeholder="e.g. Become a software engineer"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Location</label>
+                  <input
+                    type="text"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl py-3 px-4 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-zinc-900 dark:text-white"
+                  />
                 </div>
               </div>
 
@@ -139,9 +238,9 @@ const Profile = () => {
             <div className="space-y-12">
               <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
-                  { label: "Education", value: profile.university || "Not set", icon: GraduationCap },
-                  { label: "Career Goal", value: profile.goal || "Not set", icon: Target },
-                  { label: "Location", value: profile.location || "Not set", icon: MapPin }
+                  { label: "Education", value: user.university || "Not set", icon: GraduationCap },
+                  { label: "Career Goal", value: user.goal || "Not set", icon: Target },
+                  { label: "Location", value: user.location || "Not set", icon: MapPin }
                 ].map((item, i) => (
                   <div key={i} className="p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-sm">
                     <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center mb-4">
@@ -160,14 +259,18 @@ const Profile = () => {
                     Saved Internships
                   </h3>
                   <span className="text-sm font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full">
-                    {savedList.length} Items
+                    {savedInternships.length} Items
                   </span>
                 </div>
                 
-                {savedList.length > 0 ? (
+                {loadingSaved ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                  </div>
+                ) : savedInternships.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {savedList.map((internship) => (
-                      <InternshipCard key={internship.id} internship={internship} />
+                    {savedInternships.map((internship) => (
+                      <InternshipCard key={internship._id} internship={internship} />
                     ))}
                   </div>
                 ) : (

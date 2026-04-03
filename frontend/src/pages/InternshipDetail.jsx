@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { 
@@ -10,16 +10,70 @@ import {
   CheckCircle2, 
   Briefcase,
   Share2,
-  Bookmark
+  Bookmark,
+  Loader2
 } from "lucide-react";
-import { INTERNSHIPS } from "../data/internships";
+import api from "../services/api";
 import { useProfile } from "../hooks/useProfile";
 
 const InternshipDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const internship = INTERNSHIPS.find((i) => i.id === id);
-  const { profile, updateProfile } = useProfile();
+  const { user } = useProfile();
+  const [internship, setInternship] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isSaved, setIsSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [internshipRes, savedRes] = await Promise.all([
+          api.get(`/internships/${id}`),
+          user ? api.get("/saved") : Promise.resolve({ data: [] })
+        ]);
+        setInternship(internshipRes.data);
+        if (user) {
+          const savedIds = savedRes.data.map(i => i._id);
+          setIsSaved(savedIds.includes(id));
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [id, user]);
+
+  const toggleSave = async () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    setSaving(true);
+    try {
+      if (isSaved) {
+        await api.delete(`/saved/${id}`);
+        setIsSaved(false);
+      } else {
+        await api.post(`/saved/${id}`);
+        setIsSaved(true);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-24 text-center">
+        <Loader2 className="w-10 h-10 animate-spin text-indigo-600 mx-auto" />
+      </div>
+    );
+  }
 
   if (!internship) {
     return (
@@ -29,15 +83,6 @@ const InternshipDetail = () => {
       </div>
     );
   }
-
-  const isSaved = profile.savedInternships.includes(internship.id);
-
-  const toggleSave = () => {
-    const newSaved = isSaved 
-      ? profile.savedInternships.filter(sid => sid !== internship.id)
-      : [...profile.savedInternships, internship.id];
-    updateProfile({ savedInternships: newSaved });
-  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -134,7 +179,7 @@ const InternshipDetail = () => {
               <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
                 <p className="text-xs text-zinc-500 mb-3">Already secured this internship?</p>
                 <Link
-                  to={`/announce/${internship.id}`}
+                  to={`/announce/${internship._id}`}
                   className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 text-sm"
                 >
                   Announce to University
@@ -145,6 +190,7 @@ const InternshipDetail = () => {
             <div className="flex gap-4 mt-8 pt-8 border-t border-zinc-100 dark:border-zinc-800">
               <button 
                 onClick={toggleSave}
+                disabled={saving}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
                   isSaved 
                     ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600" 

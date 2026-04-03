@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import {
   Sparkles,
   Send,
@@ -9,25 +9,21 @@ import {
   BrainCircuit,
   Lightbulb,
   Target,
-  MapPin,
   GraduationCap,
   Briefcase,
   Users,
-  TrendingUp
 } from "lucide-react";
 import { useProfile } from "../hooks/useProfile";
-import { INTERNSHIPS } from "../data/internships";
+import api from "../services/api"; // <-- import your API client
 
 const AIAssistant = () => {
-  const { profile } = useProfile();
+  const { user } = useProfile(); // renamed from 'profile' to 'user' to match backend
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: `Hello! I'm your AI Career Assistant. I can help you with internship advice tailored to Ethiopian students. Based on your profile, I can provide personalized guidance for your career journey.
-
-What would you like to know about internships in Ethiopia?`,
-      timestamp: new Date()
-    }
+      content: `Hello! I'm your AI Career Assistant. I can help you with internship advice tailored to Ethiopian students. Based on your profile, I can provide personalized guidance for your career journey.\n\nWhat would you like to know about internships in Ethiopia?`,
+      timestamp: new Date(),
+    },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -39,102 +35,12 @@ What would you like to know about internships in Ethiopia?`,
     }
   }, [messages, isLoading]);
 
-  const aiResponses = {
-    "career goals": `Based on your profile as a ${profile.department || "student"}, here are some career goals you should consider:
-
-🎯 **Short-term Goals (3-6 months):**
-• Complete your current degree with excellent grades
-• Build a strong portfolio of projects
-• Network with professionals in your field
-
-🎯 **Medium-term Goals (6-12 months):**
-• Secure an internship at a reputable Ethiopian company
-• Develop in-demand technical skills
-• Gain practical experience in your chosen field
-
-🎯 **Long-term Goals (1-2 years):**
-• Transition to a full-time position
-• Consider advanced certifications
-• Build a professional network in Ethiopia's growing tech ecosystem`,
-
-    "skills": `Here are essential skills for Ethiopian internship seekers in ${profile.field || "tech"}:
-
-🛠️ **Technical Skills:**
-• Programming languages (Python, JavaScript, Java)
-• Web development (React, Node.js)
-• Database management (SQL, MongoDB)
-• Version control (Git, GitHub)
-
-💡 **Soft Skills:**
-• Communication and teamwork
-• Problem-solving abilities
-• Time management
-• Adaptability and learning agility
-
-📚 **Industry-Specific Skills:**
-• Understanding of Ethiopian market
-• Basic business acumen
-• Project management basics
-• Digital literacy`,
-
-    "companies": `Here are top Ethiopian companies offering internships:
-
-🏢 **Technology Companies:**
-• ${INTERNSHIPS.slice(0, 3).map(i => i.companyName).join('\n• ')}
-
-🏢 **Financial Services:**
-• Dashen Bank, Awash Bank, Commercial Bank of Ethiopia
-
-🏢 **Telecommunications:**
-• Ethio Telecom, Safaricom Ethiopia
-
-🏢 **Other Industries:**
-• Ethiopian Airlines, Pharmaceuticals (like Julphar)
-
-💡 **Pro Tip:** Focus on companies that align with your interests and offer growth opportunities!`,
-
-    "cv": `Here's how to create a compelling CV for Ethiopian internships:
-
-📄 **Structure Your CV:**
-• Contact information at the top
-• Professional summary (2-3 sentences)
-• Education (most recent first)
-• Skills section
-• Projects/Experience
-• Extracurricular activities
-
-✨ **Ethiopian Context Tips:**
-• Include your CGPA if above 3.0
-• Mention relevant coursework
-• Highlight any Ethiopian language skills
-• Include volunteer work or community service
-
-🎯 **Key Advice:**
-• Keep it to 1 page
-• Use action verbs
-• Quantify achievements where possible
-• Tailor for each application`,
-
-    "interview": `Interview preparation tips for Ethiopian internships:
-
-🎤 **Common Interview Questions:**
-• "Tell me about yourself"
-• "Why do you want to intern here?"
-• "What are your strengths and weaknesses?"
-• "Where do you see yourself in 5 years?"
-
-💬 **Ethiopian-Specific Advice:**
-• Research the company's role in Ethiopia's economy
-• Prepare examples from your university projects
-• Show enthusiasm for Ethiopia's development
-• Practice speaking confidently
-
-🕒 **Interview Process:**
-• Technical assessment
-• HR interview
-• Sometimes case studies or group exercises
-
-💡 **Remember:** Be yourself, show passion, and demonstrate that you've researched the company!`
+  // Prepare conversation history for the backend (exclude timestamps)
+  const getHistoryForBackend = () => {
+    return messages.map((msg) => ({
+      role: msg.role,
+      parts: [{ text: msg.content }],
+    }));
   };
 
   const handleSend = async (e) => {
@@ -142,47 +48,59 @@ What would you like to know about internships in Ethiopia?`,
     if (!input.trim() || isLoading) return;
 
     const userMessage = input;
-    setMessages(prev => [...prev, {
-      role: "user",
-      content: userMessage,
-      timestamp: new Date()
-    }]);
+    // Add user message to UI immediately
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "user",
+        content: userMessage,
+        timestamp: new Date(),
+      },
+    ]);
     setInput("");
     setIsLoading(true);
 
-    // Simulate AI thinking time
-    setTimeout(() => {
-      const lowerInput = userMessage.toLowerCase();
-      let response = "I'd be happy to help you with that! Could you be more specific about what you'd like to know about internships in Ethiopia?";
+    try {
+      // Call backend AI endpoint
+      const response = await api.post("/ai/chat", {
+        message: userMessage,
+        history: getHistoryForBackend(),
+      });
 
-      // Match user input to predefined responses
-      if (lowerInput.includes("career") || lowerInput.includes("goal")) {
-        response = aiResponses["career goals"];
-      } else if (lowerInput.includes("skill") || lowerInput.includes("learn")) {
-        response = aiResponses["skills"];
-      } else if (lowerInput.includes("company") || lowerInput.includes("where")) {
-        response = aiResponses["companies"];
-      } else if (lowerInput.includes("cv") || lowerInput.includes("resume")) {
-        response = aiResponses["cv"];
-      } else if (lowerInput.includes("interview") || lowerInput.includes("prepare")) {
-        response = aiResponses["interview"];
+      const aiReply = response.data.reply || "Sorry, I couldn't generate a response.";
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: aiReply,
+          timestamp: new Date(),
+        },
+      ]);
+    } catch (error) {
+      console.error("AI chat error:", error);
+      let errorMessage = "Sorry, the AI service is currently unavailable. Please try again later.";
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
       }
-
-      setMessages(prev => [...prev, {
-        role: "assistant",
-        content: response,
-        timestamp: new Date()
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: errorMessage,
+          timestamp: new Date(),
+        },
+      ]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const quickQuestions = [
-    { icon: Target, text: "What are my career goals?", key: "career goals" },
-    { icon: Lightbulb, text: "What skills do I need?", key: "skills" },
-    { icon: Briefcase, text: "Which companies hire interns?", key: "companies" },
-    { icon: GraduationCap, text: "How to write a good CV?", key: "cv" },
-    { icon: Users, text: "How to prepare for interviews?", key: "interview" }
+    { icon: Target, text: "What are my career goals?" },
+    { icon: Lightbulb, text: "What skills do I need?" },
+    { icon: Briefcase, text: "Which companies hire interns?" },
+    { icon: GraduationCap, text: "How to write a good CV?" },
+    { icon: Users, text: "How to prepare for interviews?" },
   ];
 
   return (
@@ -193,7 +111,9 @@ What would you like to know about internships in Ethiopia?`,
             <BrainCircuit className="w-8 h-8 text-indigo-600" />
             AI Career Assistant
           </h1>
-          <p className="text-zinc-600 dark:text-zinc-400 mt-1">Get personalized guidance for internships in Ethiopia</p>
+          <p className="text-zinc-600 dark:text-zinc-400 mt-1">
+            Get personalized guidance for internships in Ethiopia
+          </p>
         </div>
       </div>
 
@@ -209,7 +129,9 @@ What would you like to know about internships in Ethiopia?`,
                 <Bot className="w-10 h-10 text-indigo-600" />
               </div>
               <div className="space-y-4">
-                <h3 className="text-xl font-bold text-zinc-900 dark:text-white">Ready to help you grow</h3>
+                <h3 className="text-xl font-bold text-zinc-900 dark:text-white">
+                  Ready to help you grow
+                </h3>
                 <p className="text-zinc-500 dark:text-zinc-400">
                   Ask me anything about internships and career guidance in Ethiopia!
                 </p>
@@ -235,18 +157,26 @@ What would you like to know about internships in Ethiopia?`,
                 animate={{ opacity: 1, y: 0 }}
                 className={`flex gap-4 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border ${
-                  msg.role === "user"
-                    ? "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700"
-                    : "bg-indigo-600/10 border-indigo-500/20"
-                }`}>
-                  {msg.role === "user" ? <User className="w-5 h-5 text-zinc-500" /> : <Bot className="w-5 h-5 text-indigo-600" />}
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border ${
+                    msg.role === "user"
+                      ? "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700"
+                      : "bg-indigo-600/10 border-indigo-500/20"
+                  }`}
+                >
+                  {msg.role === "user" ? (
+                    <User className="w-5 h-5 text-zinc-500" />
+                  ) : (
+                    <Bot className="w-5 h-5 text-indigo-600" />
+                  )}
                 </div>
-                <div className={`max-w-[80%] px-5 py-4 rounded-2xl leading-relaxed text-[15px] ${
-                  msg.role === "user"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200"
-                }`}>
+                <div
+                  className={`max-w-[80%] px-5 py-4 rounded-2xl leading-relaxed text-[15px] ${
+                    msg.role === "user"
+                      ? "bg-indigo-600 text-white"
+                      : "bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200"
+                  }`}
+                >
                   <div className="whitespace-pre-wrap">{msg.content}</div>
                 </div>
               </motion.div>
@@ -293,5 +223,3 @@ What would you like to know about internships in Ethiopia?`,
 };
 
 export default AIAssistant;
-
-

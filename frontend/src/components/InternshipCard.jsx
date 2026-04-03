@@ -1,20 +1,48 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { MapPin, Briefcase, Calendar, ChevronRight, Bookmark } from "lucide-react";
 import { useProfile } from "../hooks/useProfile";
+import api from "../services/api";
 
 const InternshipCard = ({ internship }) => {
-  const { profile, updateProfile } = useProfile();
-  const isSaved = profile.savedInternships.includes(internship.id);
+  const { user } = useProfile();
+  const [isSaved, setIsSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const toggleSave = (e) => {
+  // Check if this internship is saved when user or internship changes
+  useEffect(() => {
+    const checkSaved = async () => {
+      if (!user || !internship?._id) return;
+      try {
+        const { data } = await api.get("/saved");
+        const savedIds = data.map(i => i._id);
+        setIsSaved(savedIds.includes(internship._id));
+      } catch (err) {
+        console.error("Error checking saved status:", err);
+      }
+    };
+    checkSaved();
+  }, [user, internship]);
+
+  const toggleSave = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const newSaved = isSaved 
-      ? profile.savedInternships.filter(id => id !== internship.id)
-      : [...profile.savedInternships, internship.id];
-    updateProfile({ savedInternships: newSaved });
+    if (!user) return; // redirect to login handled elsewhere
+    setSaving(true);
+    try {
+      if (isSaved) {
+        await api.delete(`/saved/${internship._id}`);
+        setIsSaved(false);
+      } else {
+        await api.post(`/saved/${internship._id}`);
+        setIsSaved(true);
+      }
+    } catch (err) {
+      console.error("Error toggling save:", err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -26,7 +54,7 @@ const InternshipCard = ({ internship }) => {
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center font-bold text-indigo-600 text-lg">
-              {internship.companyName.charAt(0)}
+              {internship.companyName?.charAt(0) || "?"}
             </div>
             <div>
               <h3 className="font-bold text-zinc-900 dark:text-white group-hover:text-indigo-600 transition-colors">
@@ -38,16 +66,19 @@ const InternshipCard = ({ internship }) => {
               </div>
             </div>
           </div>
-          <button 
-            onClick={toggleSave}
-            className={`p-2 rounded-lg transition-colors ${
-              isSaved 
-                ? "text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20" 
-                : "text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            }`}
-          >
-            <Bookmark className={`w-5 h-5 ${isSaved ? "fill-current" : ""}`} />
-          </button>
+          {user && (
+            <button 
+              onClick={toggleSave}
+              disabled={saving}
+              className={`p-2 rounded-lg transition-colors ${
+                isSaved 
+                  ? "text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20" 
+                  : "text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              }`}
+            >
+              <Bookmark className={`w-5 h-5 ${isSaved ? "fill-current" : ""}`} />
+            </button>
+          )}
         </div>
 
         <div className="flex gap-2 mb-4">
@@ -73,7 +104,7 @@ const InternshipCard = ({ internship }) => {
             Deadline: {new Date(internship.deadline).toLocaleDateString()}
           </div>
           <Link 
-            to={`/internships/${internship.id}`}
+            to={`/internships/${internship._id}`}
             className="flex items-center gap-1 text-sm font-bold text-indigo-600 hover:gap-2 transition-all"
           >
             View Details

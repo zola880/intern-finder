@@ -1,20 +1,43 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
-import { Briefcase, Sparkles, User, Sun, Moon, Menu, X } from "lucide-react";
+import { Briefcase, Sparkles, User, Sun, Moon, Menu, X, LogOut, PlusCircle, Shield } from "lucide-react";
 import { useProfile } from "../hooks/useProfile";
 
 const Navbar = () => {
-  const { isDarkMode, toggleDarkMode } = useProfile();
+  const { user, isDarkMode, toggleDarkMode, logout } = useProfile();
   const [isOpen, setIsOpen] = React.useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
-  const navLinks = [
+  // Base nav links for all users
+  const baseNavLinks = [
     { name: "Home", path: "/" },
     { name: "Internships", path: "/internships" },
     { name: "AI Assistant", path: "/ai-assistant" },
     { name: "Profile", path: "/profile" },
   ];
+
+  // Add role‑specific links
+  const getNavLinks = () => {
+    const links = [...baseNavLinks];
+    if (user) {
+      // Any authenticated user can post an internship
+      links.push({ name: "Post Internship", path: "/post-internship", icon: PlusCircle });
+      // Only admin sees the admin panel
+      if (user.role === "ADMIN") {
+        links.push({ name: "Admin Panel", path: "/admin", icon: Shield });
+      }
+    }
+    return links;
+  };
+
+  const navLinks = getNavLinks();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 transition-colors duration-300">
@@ -51,13 +74,26 @@ const Navbar = () => {
               >
                 {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
-              <Link
-                to="/ai-assistant"
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-sm font-semibold transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
-              >
-                <Sparkles className="w-4 h-4" />
-                AI Guide
-              </Link>
+              {user ? (
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                    {user.fullName?.split(" ")[0]}
+                  </span>
+                  <button
+                    onClick={handleLogout}
+                    className="p-2 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+                  >
+                    <LogOut className="w-5 h-5" />
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-sm font-semibold transition-all shadow-lg shadow-indigo-600/20"
+                >
+                  Login
+                </Link>
+              )}
             </div>
           </div>
 
@@ -90,6 +126,24 @@ const Navbar = () => {
               {link.name}
             </Link>
           ))}
+          <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
+            {user ? (
+              <button
+                onClick={() => { handleLogout(); setIsOpen(false); }}
+                className="w-full text-left text-lg font-medium text-red-600"
+              >
+                Logout
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                onClick={() => setIsOpen(false)}
+                className="block text-lg font-medium text-indigo-600"
+              >
+                Login
+              </Link>
+            )}
+          </div>
         </motion.div>
       )}
     </nav>

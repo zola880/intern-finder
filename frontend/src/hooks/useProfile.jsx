@@ -1,57 +1,55 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+// hooks/useProfile.jsx
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import api from '../services/api';
 
-const DEFAULT_PROFILE = {
-  fullName: "",
-  department: "",
-  university: "",
-  year: "1",
-  experienceLevel: "Beginner",
-  goal: "First internship",
-  interests: [],
-  location: "Addis Ababa",
-  savedInternships: [],
-};
-
-const ProfileContext = createContext(undefined);
+const ProfileContext = createContext();
 
 export const ProfileProvider = ({ children }) => {
-  const [profile, setProfile] = useState(() => {
-    const saved = localStorage.getItem("ethiointern_profile");
-    return saved ? JSON.parse(saved) : DEFAULT_PROFILE;
-  });
-
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem("ethiointern_theme") === "dark";
-  });
+  const [user, setUser] = useState(null);
+  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    localStorage.setItem("ethiointern_profile", JSON.stringify(profile));
-  }, [profile]);
-
-  useEffect(() => {
-    localStorage.setItem("ethiointern_theme", isDarkMode ? "dark" : "light");
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      api.get('/profile')
+        .then(res => setUser(res.data))
+        .catch(() => {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+        })
+        .finally(() => setLoading(false));
     } else {
-      document.documentElement.classList.remove("dark");
+      setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+    if (isDarkMode) document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
   }, [isDarkMode]);
 
-  const updateProfile = (updates) => {
-    setProfile(prev => ({ ...prev, ...updates }));
+  const updateProfile = async (updates) => {
+    const { data } = await api.put('/profile', updates);
+    setUser(data);
   };
 
-  const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
+  const toggleDarkMode = () => setIsDarkMode(prev => !prev);
+
+  const setAuth = (userData) => setUser(userData);
+
+  const logout = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    setUser(null);
+  };
 
   return (
-    <ProfileContext.Provider value={{ profile, updateProfile, isDarkMode, toggleDarkMode }}>
+    <ProfileContext.Provider value={{ user, updateProfile, isDarkMode, toggleDarkMode, setAuth, logout, loading }}>
       {children}
     </ProfileContext.Provider>
   );
 };
 
-export const useProfile = () => {
-  const context = useContext(ProfileContext);
-  if (!context) throw new Error("useProfile must be used within a ProfileProvider");
-  return context;
-};
+export const useProfile = () => useContext(ProfileContext);
