@@ -26,10 +26,23 @@ const InternshipList = () => {
           limit: pagination.limit,
         };
         const { data } = await api.get("/internships", { params });
-        setInternships(data.data);
-        setPagination((prev) => ({ ...prev, total: data.pagination.total }));
+        if (Array.isArray(data)) {
+          // Old response format: direct array
+          setInternships(data);
+          setPagination((prev) => ({ ...prev, total: data.length }));
+        } else if (data && data.data && data.pagination) {
+          // New response format: { data: [], pagination: {} }
+          setInternships(data.data);
+          setPagination((prev) => ({ ...prev, total: data.pagination.total }));
+        } else {
+          console.error("Invalid response structure:", data);
+          setInternships([]);
+          setPagination((prev) => ({ ...prev, total: 0 }));
+        }
       } catch (err) {
         console.error("Failed to fetch internships:", err);
+        setInternships([]);
+        setPagination((prev) => ({ ...prev, total: 0 }));
       } finally {
         setLoading(false);
       }
