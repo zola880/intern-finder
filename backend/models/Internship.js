@@ -5,14 +5,22 @@ const internshipSchema = new mongoose.Schema({
   companyLogoUrl: String,
   location: String,
   field: { type: String, required: true },
-  status: { type: String, enum: ['Open','Closed'], default: 'Open' },
+  status: { type: String, enum: ['Open', 'Closed'], default: 'Open' },
+  approvalStatus: { 
+    type: String, 
+    enum: ['PENDING', 'APPROVED', 'REJECTED'], 
+    default: 'PENDING' 
+  },
   shortDescription: { type: String, required: true },
   fullDescription: { type: String, required: true },
   requiredSkills: [String],
   duration: String,
   deadline: Date,
   website: String,
-  postedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
+  submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  adminNotes: String,
+  approvedAt: Date,
 }, { timestamps: true });
 
 module.exports = mongoose.model('Internship', internshipSchema);
+// new
