@@ -14,21 +14,19 @@ function safeRequire(modulePath, moduleName) {
       return mod;
     } else {
       console.warn(`⚠️ ${moduleName} is not a valid router (type: ${typeof mod})`);
-      // Return a dummy router
       const dummyRouter = express.Router();
       dummyRouter.use((req, res) => res.status(501).json({ error: `${moduleName} not implemented` }));
       return dummyRouter;
     }
   } catch (err) {
     console.error(`✗ Failed to load ${moduleName}:`, err.message);
-    // Return dummy router
     const dummyRouter = express.Router();
     dummyRouter.use((req, res) => res.status(501).json({ error: `${moduleName} not available` }));
     return dummyRouter;
   }
 }
 
-// Import routes with safe fallback
+// Import routes
 const authRoutes = safeRequire('./routes/authRoutes', 'authRoutes');
 const profileRoutes = safeRequire('./routes/profileRoutes', 'profileRoutes');
 const internshipRoutes = safeRequire('./routes/internshipRoutes', 'internshipRoutes');
@@ -38,9 +36,13 @@ const aiRoutes = safeRequire('./routes/aiRoutes', 'aiRoutes');
 
 const app = express();
 
-// Middleware
+// ========== CORS (must be before routes) ==========
+// Allow all origins in development (or set specific ones)
+// For production, replace with your frontend URL(s)
+app.use(cors({ origin: true, credentials: true }));
+// ==================================================
+
 app.use(helmet());
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -48,7 +50,7 @@ app.use(express.urlencoded({ extended: true }));
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
 app.use('/api', limiter);
 
-// Routes (now each is guaranteed to be a valid router)
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/internships', internshipRoutes);
@@ -56,7 +58,7 @@ app.use('/api/saved', savedRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/ai', aiRoutes);
 
-// Health check endpoint
+// Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date() }));
 
 // MongoDB connection

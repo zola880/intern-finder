@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "motion/react";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, AlertCircle } from "lucide-react";
 import InternshipCard from "../components/InternshipCard";
 import api from "../services/api";
 import { useProfile } from "../hooks/useProfile";
@@ -9,40 +9,51 @@ const InternshipList = () => {
   const { user } = useProfile();
   const [internships, setInternships] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedField, setSelectedField] = useState("All");
   const [pagination, setPagination] = useState({ page: 1, limit: 9, total: 0 });
 
   const fields = ["All", "IT", "Business", "Engineering", "Health", "Other"];
 
-  useEffect(() => {
-    const fetchInternships = async () => {
-      setLoading(true);
-      try {
-        const params = {
-          search: searchTerm || undefined,
-          field: selectedField === "All" ? undefined : selectedField,
-          page: pagination.page,
-          limit: pagination.limit,
-        };
-        const { data } = await api.get("/internships", { params });
-        setInternships(data.data);
-        setPagination((prev) => ({ ...prev, total: data.pagination.total }));
-      } catch (err) {
-        console.error("Failed to fetch internships:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchInternships = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = {
+        search: searchTerm || undefined,
+        field: selectedField === "All" ? undefined : selectedField,
+        page: pagination.page,
+        limit: pagination.limit,
+      };
+      // The backend already filters based on user role (student sees only approved)
+      const { data } = await api.get("/internships", { params });
+      setInternships(data.data);
+      setPagination((prev) => ({ ...prev, total: data.pagination.total }));
+    } catch (err) {
+      console.error("Failed to fetch internships:", err);
+      setError(err.response?.data?.message || "Failed to load internships. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [searchTerm, selectedField, pagination.page, pagination.limit]);
 
-    // Debounce search to avoid too many requests
-    const timer = setTimeout(fetchInternships, 300);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchInternships();
+    }, 300);
     return () => clearTimeout(timer);
-  }, [searchTerm, selectedField, pagination.page, pagination.limit, user]);
+  }, [fetchInternships]);
 
   const handlePageChange = (newPage) => {
     setPagination((prev) => ({ ...prev, page: newPage }));
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedField("All");
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   return (
@@ -83,7 +94,7 @@ const InternshipList = () => {
               key={field}
               onClick={() => {
                 setSelectedField(field);
-                setPagination((prev) => ({ ...prev, page: 1 })); // reset page on filter change
+                setPagination((prev) => ({ ...prev, page: 1 }));
               }}
               className={`px-6 py-4 rounded-2xl font-bold text-sm whitespace-nowrap transition-all border ${
                 selectedField === field
@@ -97,10 +108,24 @@ const InternshipList = () => {
         </div>
       </div>
 
-      {/* Grid */}
+      {/* Content */}
       {loading ? (
         <div className="flex justify-center py-24">
           <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
+        </div>
+      ) : error ? (
+        <div className="py-24 text-center">
+          <div className="w-20 h-20 bg-red-100 dark:bg-red-900/20 rounded-3xl flex items-center justify-center mx-auto mb-6">
+            <AlertCircle className="w-10 h-10 text-red-600" />
+          </div>
+          <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-2">Error loading internships</h3>
+          <p className="text-zinc-500 dark:text-zinc-400">{error}</p>
+          <button
+            onClick={fetchInternships}
+            className="mt-6 text-indigo-600 font-bold hover:underline"
+          >
+            Try again
+          </button>
         </div>
       ) : internships.length > 0 ? (
         <>
@@ -140,11 +165,7 @@ const InternshipList = () => {
           <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-2">No internships found</h3>
           <p className="text-zinc-500 dark:text-zinc-400">Try adjusting your search or filters to find more opportunities.</p>
           <button
-            onClick={() => {
-              setSearchTerm("");
-              setSelectedField("All");
-              setPagination((prev) => ({ ...prev, page: 1 }));
-            }}
+            onClick={clearFilters}
             className="mt-6 text-indigo-600 font-bold hover:underline"
           >
             Clear all filters
