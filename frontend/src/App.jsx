@@ -4,7 +4,7 @@ import { ProfileProvider } from "./hooks/useProfile";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
-import InternshipList from "./pages/InternshipList";
+import InternshipList from "./pages/InternshipList";// List of internships with search and filters  
 import InternshipDetail from "./pages/InternshipDetail";
 import AnnouncementForm from "./pages/AnnouncementForm";
 import AIAssistant from "./pages/AIAssistant";
@@ -14,6 +14,8 @@ import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PostInternship from "./pages/PostInternship";
 import AdminDashboard from "./pages/AdminDashboard";
+import CompanyHome from "./pages/CompanyHome";
+import CompanyAdmin from "./pages/CompanyAdmin";
 
 export default function App() {
   return (
@@ -47,6 +49,14 @@ export default function App() {
               <Route 
                 path="/admin" 
                 element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} 
+              />
+              <Route 
+                path="/company" 
+                element={<ProtectedRoute><CompanyHome /></ProtectedRoute>} 
+              />
+              <Route 
+                path="/company/admin" 
+                element={<ProtectedRoute><CompanyAdmin /></ProtectedRoute>} 
               />
             </Routes>
           </main>

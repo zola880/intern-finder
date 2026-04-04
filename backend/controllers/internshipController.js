@@ -3,35 +3,45 @@ const Internship = require('../models/Internship');
 // @desc    Get all internships (filtered by role)
 exports.getAllInternships = async (req, res) => {
   try {
-    const { search, field, page = 1, limit = 9 } = req.query;
-    const query = {};
+    const { search, field, status, page = 1, limit = 10, sort = 'newest' } = req.query;
+    const filter = {};
 
-    // Add search filter
+    // Role‑based visibility – this cannot be overridden by query params
+    if (req.user.role === 'STUDENT') {
+      filter.approvalStatus = 'APPROVED';
+    } else if (req.user.role === 'EMPLOYER') {
+      filter.submittedBy = req.user._id;
+    }
+    // ADMIN sees all – but they can optionally filter by approvalStatus via query
+    else if (req.user.role === 'ADMIN' && req.query.approvalStatus) {
+      filter.approvalStatus = req.query.approvalStatus;
+    }
+
     if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { company: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
+      filter.$or = [
+        { companyName: { $regex: search, $options: 'i' } },
+        { shortDescription: { $regex: search, $options: 'i' } }
       ];
     }
+    if (field && field !== 'All') filter.field = field;
+    if (status) filter.status = status;
 
-    // Add field filter
-    if (field && field !== 'All') {
-      query.field = field;
-    }
+    let sortOption = {};
+    if (sort === 'deadline_asc') sortOption = { deadline: 1 };
+    else if (sort === 'deadline_desc') sortOption = { deadline: -1 };
+    else sortOption = { createdAt: -1 };
 
-    const skip = (page - 1) * limit;
-    const total = await Internship.countDocuments(query);
-    const internships = await Internship.find(query).skip(skip).limit(parseInt(limit));
+    const internships = await Internship.find(filter)
+      .sort(sortOption)
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit))
+      .populate('submittedBy', 'fullName email');
+
+    const total = await Internship.countDocuments(filter);
 
     res.json({
       data: internships,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit)
-      }
+      pagination: { page: parseInt(page), limit: parseInt(limit), total }
     });
   } catch (err) {
     res.status(500).json({ message: err.message });

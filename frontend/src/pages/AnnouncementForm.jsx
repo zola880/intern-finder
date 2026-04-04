@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { 
   ArrowLeft, 
   Upload, 
-  CheckCircle2, 
+  CheckCircle2, // Success Icon
   AlertCircle, 
   Send, 
   FileText, 

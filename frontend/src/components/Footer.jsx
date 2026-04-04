@@ -1,4 +1,4 @@
-import React from "react";
+import React from "react";// Footer component with company info, quick links, and social media icons
 import { Link } from "react-router-dom";
 import { Facebook, Twitter, Linkedin, Github, Mail } from "lucide-react";
 

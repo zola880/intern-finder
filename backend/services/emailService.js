@@ -53,3 +53,4 @@ exports.sendStudentConfirmation = async (studentEmail, studentName, companyName)
   };
   await transporter.sendMail(mailOptions);
 };
+// new

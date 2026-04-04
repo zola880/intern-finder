@@ -14,4 +14,4 @@ const ProtectedRoute = ({ children }) => {
   return user ? children : <Navigate to="/login" />;
 };
 
-export default ProtectedRoute;
+export default ProtectedRoute;// A higher-order component to protect routes that require authentication

@@ -1,6 +1,6 @@
 export const INTERNSHIPS = [
   {
-    id: "1",
+    id: "1",// This ID is just for frontend use; the backend will generate its own IDs
     companyName: "Safaricom Ethiopia",
     location: "Addis Ababa",
     field: "IT",
@@ -62,6 +62,6 @@ export const INTERNSHIPS = [
     requiredSkills: ["Data Management", "Technical Writing", "Basic Programming"],
     duration: "3 Months",
     deadline: "2026-03-01",
-    website: "https://www.mint.gov.et"
+    website: "https://www.mint.gov.et"//ministry of innovation and technology
   }
 ];

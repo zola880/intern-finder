@@ -14,10 +14,10 @@ import {
   Users,
 } from "lucide-react";
 import { useProfile } from "../hooks/useProfile";
-import api from "../services/api"; // <-- import your API client
+// No API import – Puter.js is loaded globally from index.html
 
 const AIAssistant = () => {
-  const { user } = useProfile(); // renamed from 'profile' to 'user' to match backend
+  const { user } = useProfile();
   const [messages, setMessages] = useState([
     {
       role: "assistant",
@@ -35,12 +35,11 @@ const AIAssistant = () => {
     }
   }, [messages, isLoading]);
 
-  // Prepare conversation history for the backend (exclude timestamps)
-  const getHistoryForBackend = () => {
-    return messages.map((msg) => ({
-      role: msg.role,
-      parts: [{ text: msg.content }],
-    }));
+  // Build conversation history as a single string for context
+  const buildConversationContext = () => {
+    return messages
+      .map((msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`)
+      .join("\n\n");
   };
 
   const handleSend = async (e) => {
@@ -61,13 +60,18 @@ const AIAssistant = () => {
     setIsLoading(true);
 
     try {
-      // Call backend AI endpoint
-      const response = await api.post("/ai/chat", {
-        message: userMessage,
-        history: getHistoryForBackend(),
+      // Use Puter.js AI – no API key required
+      // Include the conversation history so the AI remembers context
+      const fullPrompt = buildConversationContext() + `\n\nUser: ${userMessage}\nAssistant:`;
+      
+      // Call puter.ai.chat – ensure puter is available (script loaded in index.html)
+      const response = await puter.ai.chat(fullPrompt, { 
+        model: "gpt-4.1-nano"  // you can change to "gpt-3.5-turbo" or others
       });
+      
+      // The response structure: response.message.content or response directly
+      const aiReply = response.message?.content || response;
 
-      const aiReply = response.data.reply || "Sorry, I couldn't generate a response.";
       setMessages((prev) => [
         ...prev,
         {
@@ -77,11 +81,8 @@ const AIAssistant = () => {
         },
       ]);
     } catch (error) {
-      console.error("AI chat error:", error);
+      console.error("Puter AI error:", error);
       let errorMessage = "Sorry, the AI service is currently unavailable. Please try again later.";
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
       setMessages((prev) => [
         ...prev,
         {
@@ -222,4 +223,4 @@ const AIAssistant = () => {
   );
 };
 
-export default AIAssistant;
+export default AIAssistant;//n

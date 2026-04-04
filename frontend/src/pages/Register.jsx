@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react';// New registration page
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { useProfile } from '../hooks/useProfile';

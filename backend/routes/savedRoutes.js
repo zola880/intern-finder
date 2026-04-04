@@ -8,3 +8,4 @@ router.post('/:internshipId', auth, savedController.saveInternship);
 router.delete('/:internshipId', auth, savedController.unsaveInternship);
 
 module.exports = router;
+// new

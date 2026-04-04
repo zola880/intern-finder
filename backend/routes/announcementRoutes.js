@@ -20,3 +20,4 @@ router.get('/', announcementController.getMyAnnouncements);
 router.put('/:id/status', roleCheck('UNIVERSITY_ADMIN', 'ADMIN'), announcementController.updateAnnouncementStatus);
 
 module.exports = router;
+// new

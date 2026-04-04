@@ -16,10 +16,16 @@ function safeRequire(modulePath, moduleName) {
       console.log(`✓ ${moduleName} loaded successfully`);
       return mod;
     } else {
-      console.warn(`⚠️ ${moduleName} is not a valid router`);
+      console.warn(`⚠️ ${moduleName} is not a valid router (type: ${typeof mod})`);
+      const dummyRouter = express.Router();
+      dummyRouter.use((req, res) => res.status(501).json({ error: `${moduleName} not implemented` }));
+      return dummyRouter;
     }
   } catch (err) {
     console.error(`✗ Failed to load ${moduleName}:`, err.message);
+    const dummyRouter = express.Router();
+    dummyRouter.use((req, res) => res.status(501).json({ error: `${moduleName} not available` }));
+    return dummyRouter;
   }
 
   // fallback router
@@ -30,8 +36,7 @@ function safeRequire(modulePath, moduleName) {
   return dummyRouter;
 }
 
-
-// ✅ IMPORT ROUTES
+// Import routes
 const authRoutes = safeRequire('./routes/authRoutes', 'authRoutes');
 const profileRoutes = safeRequire('./routes/profileRoutes', 'profileRoutes');
 const internshipRoutes = safeRequire('./routes/internshipRoutes', 'internshipRoutes');
@@ -40,22 +45,13 @@ const announcementRoutes = safeRequire('./routes/announcementRoutes', 'announcem
 const aiRoutes = safeRequire('./routes/aiRoutes', 'aiRoutes');
 
 
-// ✅ SECURITY
+// ========== CORS (must be before routes) ==========
+// Allow all origins in development (or set specific ones)
+// For production, replace with your frontend URL(s)
+app.use(cors({ origin: true, credentials: true }));
+// ==================================================
+
 app.use(helmet());
-
-
-// ✅ ✅ FIXED CORS CONFIG (IMPORTANT)
-const corsOptions = {
-  origin: ['http://localhost:3000', 'http://localhost:5173'],
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
-};
-
-app.use(cors(corsOptions));
-
-
-// ✅ BODY PARSER
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -67,8 +63,7 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-
-// ✅ ROUTES
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/internships', internshipRoutes);
@@ -76,6 +71,8 @@ app.use('/api/saved', savedRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/ai', aiRoutes);
 
+// Health check
+app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date() }));
 
 // ✅ HEALTH CHECK
 app.get('/health', (req, res) => {
@@ -91,6 +88,5 @@ mongoose.connect(process.env.MONGO_URI)
 
 // ✅ START SERVER
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// new

@@ -33,4 +33,22 @@ exports.updateProfile = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
+
+// GET /api/profiles/for-companies - list student profiles for company recruiters
+exports.getCandidatesForCompanies = async (req, res) => {
+  try {
+    if (!['EMPLOYER', 'ADMIN', 'UNIVERSITY_ADMIN'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Insufficient permissions' });
+    }
+
+    const candidates = await User.find(
+      { role: 'STUDENT' },
+      'fullName university department year experienceLevel goal interests location'
+    ).lean();
+
+    res.json({ data: candidates, total: candidates.length });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 // new
